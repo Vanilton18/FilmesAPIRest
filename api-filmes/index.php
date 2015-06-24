@@ -30,6 +30,9 @@ $app->delete('/diretores/:id','deleteDiretor');
 	Routes produtoras
 */
 $app->get('/produtoras', 'getProdutoras');
+$app->post('/produtoras', 'addProdutora');
+$app->put('/produtoras/:id', 'updateProdutora');
+$app->delete('/produtoras/:id', 'deleteProdutora');
 
 $app->run();
 
@@ -221,11 +224,51 @@ function deleteDiretor($id)
 	echo json_encode(array('message' => 'Diretor excluído com sucesso.'));
 }
 
+/*
+	Produtoras
+*/
 function getProdutoras()
 {
 	$stmt = getConn()->query("SELECT * FROM produtoras");
 	$produtoras = $stmt->fetchAll(PDO::FETCH_OBJ);
 	echo json_encode($produtoras);
+}
+
+function addProdutora()
+{
+	$request = \Slim\Slim::getInstance()->request();
+	$produtora = json_decode($request->getBody());
+	$sql = "INSERT INTO produtoras (nome) values (:nome)";
+	$conn = getConn();
+	$stmt = $conn->prepare($sql);
+	$stmt->bindParam("nome",$produtora->nome);
+	$stmt->execute();
+	$produtora->id = $conn->lastInsertId();
+	echo json_encode($produtora);
+}
+
+function updateProdutora($id)
+{
+	$request = \Slim\Slim::getInstance()->request();
+	$produtora = json_decode($request->getBody());
+	$sql = "UPDATE produtoras SET nome=:nome WHERE id_produtora=:id";
+	$conn = getConn();
+	$stmt = $conn->prepare($sql);
+	$stmt->bindParam("nome",$produtora->nome);
+	$stmt->bindParam("id",$id);
+	$stmt->execute();
+
+	echo json_encode($produtora);
+}
+
+function deleteProdutora($id)
+{
+	$sql = "DELETE FROM produtoras WHERE id_produtora=:id";
+	$conn = getConn();
+	$stmt = $conn->prepare($sql);
+	$stmt->bindParam("id",$id);
+	$stmt->execute();
+	echo json_encode(array('message' => 'Produtora excluída com sucesso.'));
 }
 
 ?>
