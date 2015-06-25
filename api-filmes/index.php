@@ -34,6 +34,11 @@ $app->post('/produtoras', 'addProdutora');
 $app->put('/produtoras/:id', 'updateProdutora');
 $app->delete('/produtoras/:id', 'deleteProdutora');
 
+/*
+	Routes 
+*/
+$app->get('/diretores/:id/filmes', 'getFilmesByDirectors');
+
 $app->run();
 
 function getConn()
@@ -269,6 +274,42 @@ function deleteProdutora($id)
 	$stmt->bindParam("id",$id);
 	$stmt->execute();
 	echo json_encode(array('message' => 'Produtora excluída com sucesso.'));
+}
+
+function getFilmesByDirectors($id)
+{
+	$conn = getConn();
+	$sql = "SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
+	p.id_produtora as idProdutora, p.nome as produtora, 
+	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
+	dr.sobrenome as sobrenome_diretor from diretores as dr 
+	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE dr.id_diretor=:id;";
+	$stmt = $conn->prepare($sql);
+	$stmt->bindParam("id",$id);
+	$stmt->execute();
+	
+	$f = array();
+	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
+	{
+		$f[] = array(
+			"id" => $filme->idFilme,
+			"titulo" => $filme->titulo,
+			"ano" => $filme->ano, 
+			"genero" => $filme->genero,
+			"pais" => $filme->pais,
+			"diretor" => array(
+				"id" => $filme->idDiretor,
+				"nome" => $filme->nome_diretor,
+				"sobrenome" => $filme->sobrenome_diretor
+			),
+			"produtora" => array(
+				"id" => $filme->idProdutora,
+				"nome" => $filme->produtora
+			)
+		);
+	}	
+	echo json_encode($f);		
 }
 
 ?>
