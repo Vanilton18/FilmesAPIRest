@@ -179,7 +179,9 @@ function addFilme()
 		$stmt->bindParam("diretorId",$filme->diretorId);
 		$stmt->execute();
 		$filme->id = $conn->lastInsertId();
-		echo json_encode($filme);
+		$app->response()->setStatus(201);
+		$app->response->getStatus();	
+		echo json_encode(array("id" => $filme->id));
 	}
 	catch(PDOException $e)
 	{
@@ -214,7 +216,7 @@ function updateFilme($id)
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
 	
-		echo json_encode($filme);
+		echo json_encode(array("message" => "Filme atualizado."));
 	}
 	catch(PDOException $e)
 	{
@@ -237,6 +239,8 @@ function deleteFilme($id)
 		$stmt = $conn->prepare($sql);
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
+		$app->response()->setStatus(204);
+		$app->response->getStatus();	
 		echo json_encode(array('message' => 'Filme excluído com sucesso.'));
 	}
 	catch(PDOException $e)
@@ -273,7 +277,9 @@ function addDiretor()
 		$stmt->bindParam("sobrenome",$diretor->sobrenome);
 		$stmt->execute();
 		$diretor->id_diretor = $conn->lastInsertId();
-		echo json_encode($diretor);
+		$app->response()->setStatus(201);
+		$app->response->getStatus();
+		echo json_encode(array("id" => $diretor->id_diretor));
 	}
 	catch(PDOException $e)
 	{
@@ -329,7 +335,7 @@ function updateDiretor($id)
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
 		
-		echo json_encode($diretor);
+		echo json_encode(array("message" => "Diretor atualizado."));
 	}
 	catch(PDOException $e)
 	{
@@ -353,6 +359,8 @@ function deleteDiretor($id)
 		$stmt = $conn->prepare($sql);
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
+		$app->response()->setStatus(204);
+		$app->response->getStatus();
 		echo json_encode(array('message' => 'Diretor excluído com sucesso.'));
 	}
 	catch(PDOException $e)
@@ -390,7 +398,9 @@ function addProdutora()
 	$stmt->bindParam("nome",$produtora->nome);
 	$stmt->execute();
 	$produtora->id = $conn->lastInsertId();
-	echo json_encode($produtora);
+	$app->response()->setStatus(201);
+	$app->response->getStatus();
+	echo json_encode(array("id" => $produtora->id));
 	}
 	catch(PDOException $e)
 	{
@@ -412,7 +422,7 @@ function updateProdutora($id)
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
 
-		echo json_encode($produtora);
+		echo json_encode(array("message" => "Produtora atualizada."));
 	}
 	catch(PDOException $e)
 	{
@@ -430,6 +440,8 @@ function deleteProdutora($id)
 		$stmt = $conn->prepare($sql);
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
+		$app->response()->setStatus(204);
+		$app->response->getStatus();
 		echo json_encode(array('message' => 'Produtora excluída com sucesso.'));
 	}
 	catch(PDOException $e)
