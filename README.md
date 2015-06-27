@@ -11,11 +11,15 @@ Servidor Wamp Server 2.4.4
 Executar o script na raiz do projeto (modelagem_relacional_create.sql)
 
 # Inserir Dados na Base
+
 Executar o script na raiz do projeto (script_popular.sql)
 
 #URLs Gerais
+
 http://localhost/api-filmes/filmes
+
 http://localhost/api-filmes/diretores
+
 http://localhost/api-filmes/produtoras
 
 Mais informações Enviar email.
