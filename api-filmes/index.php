@@ -48,11 +48,21 @@ function getConn()
 	'',
 	array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8"));
 }
+
+function response($app, $statusCode, $message)
+{
+	$app->response()->setStatus($statusCode);
+	$status = $app->response->getStatus();		
+    echo json_encode(array('message' => $message));
+}
+
 /*
 	Consultar todos os filmes
 */
 function getFilmes()
 {
+	$app = \Slim\Slim::getInstance();
+	
 	if (isset($_GET['titulo'])){
         $titulo = $_GET['titulo'];
         getByTitle($titulo);
@@ -75,39 +85,58 @@ function getFilmes()
 		return;
 	}
 
-	$stmt = getConn()->query("SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
-	p.id_produtora as idProdutora, p.nome as produtora, 
-	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
-	dr.sobrenome as sobrenome_diretor from diretores as dr 
-	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora;");
-
-	$f = array();	
-	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
-	{
-		$f[] = jsonFormat($filme);
-	}
+	try{
+		$stmt = getConn()->query("SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
+		p.id_produtora as idProdutora, p.nome as produtora, 
+		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
+		dr.sobrenome as sobrenome_diretor from diretores as dr 
+		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora;");
 	
-	echo json_encode($f);	
+		$f = array();	
+		while($filme = $stmt->fetch(PDO::FETCH_OBJ))
+		{
+			$f[] = jsonFormat($filme);
+		}
+		
+		echo json_encode($f);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500,  $e->getMessage());
+	}
 }
 
 function getFilme($id)
 {
-	$conn = getConn();
-	$sql = "SELECT f.id_filme as id, f.titulo, f.ano, f.genero, f.pais, 
-	p.id_produtora as idProdutora, p.nome as produtora, 
-	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
-	dr.sobrenome as sobrenome_diretor from diretores as dr 
-	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE id_filme=:id;";
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("id",$id);
-	$stmt->execute();
-	$filme = $stmt->fetch(PDO::FETCH_OBJ);
-		
-	$f = jsonFormat($filme);
-
-	echo json_encode($f);
+	$app = \Slim\Slim::getInstance();
+	
+	if(!is_int($id))
+	{		
+		response($app, 400, 'Parâmetro inválido.');
+		return;
+	}
+	try{
+		$conn = getConn();
+		$sql = "SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
+		p.id_produtora as idProdutora, p.nome as produtora, 
+		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
+		dr.sobrenome as sobrenome_diretor from diretores as dr 
+		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE id_filme=:id;";
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("id",$id);
+		$stmt->execute();
+		$filme = $stmt->fetch(PDO::FETCH_OBJ);
+			
+		$f = jsonFormat($filme);
+	
+		echo json_encode($f);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500,  $e->getMessage());
+	}
 }
 
 /*
@@ -115,20 +144,28 @@ function getFilme($id)
 */
 function addFilme()
 {
-	$request = \Slim\Slim::getInstance()->request();
-	$filme = json_decode($request->getBody());
-	$sql = "INSERT INTO filmes (titulo, ano, genero, pais, id_produtora, id_diretor) values (:titulo,:ano, :genero, :pais, :produtoraId, :diretorId)";
-	$conn = getConn();
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("titulo",$filme->titulo);
-	$stmt->bindParam("ano",$filme->ano);
-	$stmt->bindParam("genero",$filme->genero);
-	$stmt->bindParam("pais",$filme->pais);
-	$stmt->bindParam("produtoraId",$filme->produtoraId);
-	$stmt->bindParam("diretorId",$filme->diretorId);
-	$stmt->execute();
-	$filme->id = $conn->lastInsertId();
-	echo json_encode($filme);
+	$app = \Slim\Slim::getInstance();
+	
+	try{
+		$request = \Slim\Slim::getInstance()->request();
+		$filme = json_decode($request->getBody());
+		$sql = "INSERT INTO filmes (titulo, ano, genero, pais, id_produtora, id_diretor) values (:titulo,:ano, :genero, :pais, :produtoraId, :diretorId)";
+		$conn = getConn();
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("titulo",$filme->titulo);
+		$stmt->bindParam("ano",$filme->ano);
+		$stmt->bindParam("genero",$filme->genero);
+		$stmt->bindParam("pais",$filme->pais);
+		$stmt->bindParam("produtoraId",$filme->produtoraId);
+		$stmt->bindParam("diretorId",$filme->diretorId);
+		$stmt->execute();
+		$filme->id = $conn->lastInsertId();
+		echo json_encode($filme);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500, $e->getMessage());
+	}
 }
 
 /*
@@ -136,64 +173,116 @@ function addFilme()
 */
 function updateFilme($id)
 {
-	$request = \Slim\Slim::getInstance()->request();
-	$filme = json_decode($request->getBody());
-	$sql = "UPDATE filmes SET titulo=:titulo, ano=:ano, genero=:genero, pais=:pais, produtora_id=:produtoraId, diretor_id=:diretorId WHERE id_filme=:id";
-	$conn = getConn();
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("titulo",$filme->titulo);
-	$stmt->bindParam("ano",$filme->ano);
-	$stmt->bindParam("genero",$filme->genero);
-	$stmt->bindParam("pais",$filme->pais);
-	$stmt->bindParam("produtoraId",$filme->produtoraId);
-	$stmt->bindParam("diretorId",$filme->diretorId);
-	$stmt->bindParam("id",$id);
-	$stmt->execute();
-
-	echo json_encode($filme);
+	$app = \Slim\Slim::getInstance();
+		
+	if(!is_int($id))
+	{		
+		response($app, 400, 'Parâmetro inválido.');
+		return;
+	}
+	try{
+		$request = \Slim\Slim::getInstance()->request();
+		$filme = json_decode($request->getBody());
+		$sql = "UPDATE filmes SET titulo=:titulo, ano=:ano, genero=:genero, pais=:pais, produtora_id=:produtoraId, diretor_id=:diretorId WHERE id_filme=:id";
+		$conn = getConn();
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("titulo",$filme->titulo);
+		$stmt->bindParam("ano",$filme->ano);
+		$stmt->bindParam("genero",$filme->genero);
+		$stmt->bindParam("pais",$filme->pais);
+		$stmt->bindParam("produtoraId",$filme->produtoraId);
+		$stmt->bindParam("diretorId",$filme->diretorId);
+		$stmt->bindParam("id",$id);
+		$stmt->execute();
+	
+		echo json_encode($filme);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500, $e->getMessage());
+	}
 }
 
 function deleteFilme($id)
-{
-	$sql = "DELETE FROM filmes WHERE id_filme=:id";
-	$conn = getConn();
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("id",$id);
-	$stmt->execute();
-	echo json_encode(array('message' => 'Filme excluído com sucesso.'));
+{	
+	$app = \Slim\Slim::getInstance();
+	
+	if(!is_int($id))
+	{		
+		response($app, 400, 'Parâmetro inválido.');
+		return;
+	}
+	try{
+		$sql = "DELETE FROM filmes WHERE id_filme=:id";
+		$conn = getConn();
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("id",$id);
+		$stmt->execute();
+		echo json_encode(array('message' => 'Filme excluído com sucesso.'));
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500, $e->getMessage());
+	}
 }
 
 function getDiretores()
 {
-	$stmt = getConn()->query("SELECT * FROM diretores");
-	$diretores = $stmt->fetchAll(PDO::FETCH_OBJ);
-	echo json_encode($diretores);
+	$app = \Slim\Slim::getInstance();
+	try{
+		$stmt = getConn()->query("SELECT * FROM diretores");
+		$diretores = $stmt->fetchAll(PDO::FETCH_OBJ);
+		echo json_encode($diretores);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500, $e->getMessge());
+	}
 }
 
 function addDiretor()
 {
-	$request = \Slim\Slim::getInstance()->request();
-	$diretor = json_decode($request->getBody());
-	$sql = "INSERT INTO diretores (nome,sobrenome) values (:nome,:sobrenome)";
-	$conn = getConn();
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("nome",$diretor->nome);
-	$stmt->bindParam("sobrenome",$diretor->sobrenome);
-	$stmt->execute();
-	$diretor->id_diretor = $conn->lastInsertId();
-	echo json_encode($diretor);
+	$app = \Slim\Slim::getInstance();
+	
+	try{
+		$request = \Slim\Slim::getInstance()->request();
+		$diretor = json_decode($request->getBody());
+		$sql = "INSERT INTO diretores (nome,sobrenome) values (:nome,:sobrenome)";
+		$conn = getConn();
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("nome",$diretor->nome);
+		$stmt->bindParam("sobrenome",$diretor->sobrenome);
+		$stmt->execute();
+		$diretor->id_diretor = $conn->lastInsertId();
+		echo json_encode($diretor);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500, $e->getMessage());
+	}
 }
 
 function getDiretor($id)
 {
-	$conn = getConn();
-	$sql = "SELECT * FROM diretores WHERE id_diretor=:id";
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("id",$id);
-	$stmt->execute();
-	$diretor = $stmt->fetchObject();
-
-	echo json_encode($diretor);
+	if(!is_int($id))
+	{		
+		response($app, 400, 'Parâmetro inválido.');
+		return;
+	}
+	try{
+		$conn = getConn();
+		$sql = "SELECT * FROM diretores WHERE id_diretor=:id";
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("id",$id);
+		$stmt->execute();
+		$diretor = $stmt->fetchObject();
+	
+		echo json_encode($diretor);
+	}
+	catch(PDOException $e)
+	{
+		response($app, 500, $e->getMessage());
+	}
 }
 
 function updateDiretor($id)
