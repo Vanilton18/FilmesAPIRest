@@ -520,11 +520,12 @@ function getPaginacao($offset, $limit)
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora LIMIT {$inicio},{$offset} ORDER BY f.id_filme;";
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora ORDER BY f.id_filme LIMIT {$inicio},{$offset};";
 
 		$stmt = $conn->prepare($sql);
 		$stmt->execute();
 		$f = array();
+		
 		while($filme = $stmt->fetch(PDO::FETCH_OBJ))
 		{
 			$f[] = jsonFormat($filme);
