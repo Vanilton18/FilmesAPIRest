@@ -9,6 +9,11 @@ $app->get('/', function () {
 });
 
 /*
+	Paginacao
+*/
+$app->get('/filmes/:offset/:limit', 'getPaginacao');
+
+/*
 	Routes filmes
 */
 $app->get('/filmes/:titulo', 'getByTitle');
@@ -348,6 +353,59 @@ function getByTitle($titulo)
 		);
 	}	
 	echo json_encode($f);
+}
+
+function getPaginacao($offset, $limit)
+{
+	$inicio = ($limit - 1) * $offset;
+	
+	$request = \Slim\Slim::getInstance()->request();
+	
+	$sqlCountRow = "SELECT COUNT(*) as count FROM filmes";
+	$conn = getConn();
+	$stmt = $conn->prepare($sqlCountRow);
+	$stmt->execute();
+	$count_row = $stmt->fetch(PDO::FETCH_OBJ);
+	$total_registros = $count_row->count;
+	$page_count = (int)ceil($total_registros / $offset);
+	
+	
+	$sql = "SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
+	p.id_produtora as idProdutora, p.nome as produtora, 
+	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
+	dr.sobrenome as sobrenome_diretor from diretores as dr 
+	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora LIMIT {$inicio},{$offset};";
+
+	$stmt = $conn->prepare($sql);
+	$stmt->execute();
+	$f = array();
+	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
+	{
+		$f[] = array(
+			"id" => $filme->idFilme,
+			"titulo" => $filme->titulo,
+			"ano" => $filme->ano, 
+			"genero" => $filme->genero,
+			"pais" => $filme->pais,
+			"diretor" => array(
+				"id" => $filme->idDiretor,
+				"nome" => $filme->nome_diretor,
+				"sobrenome" => $filme->sobrenome_diretor
+			),
+			"produtora" => array(
+				"id" => $filme->idProdutora,
+				"nome" => $filme->produtora
+			)
+		);
+	}
+
+	$paginacao = array(
+		"totalRegistros" => $total_registros,
+		"totalPaginas" => $page_count,
+		"filmes" => $f
+	);
+	echo json_encode($paginacao);
 }
 
 ?>
