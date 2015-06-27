@@ -9,14 +9,8 @@ $app->get('/', function () {
 });
 
 /*
-	Paginacao
-*/
-$app->get('/filmes/:offset/:limit', 'getPaginacao');
-
-/*
 	Routes filmes
 */
-$app->get('/filmes/:titulo', 'getByTitle');
 $app->get('/filmes', 'getFilmes');
 $app->post('/filmes', 'addFilme');
 $app->get('/filmes/:id', 'getFilme');
@@ -41,7 +35,7 @@ $app->put('/produtoras/:id', 'updateProdutora');
 $app->delete('/produtoras/:id', 'deleteProdutora');
 
 /*
-	Routes 
+	Routes filmes e diretores
 */
 $app->get('/diretores/:id/filmes', 'getFilmesByDirectors');
 
@@ -59,33 +53,41 @@ function getConn()
 */
 function getFilmes()
 {
-	$stmt = getConn()->query("SELECT f.id_filme as id, f.titulo, f.ano, f.genero, f.pais, 
+	if (isset($_GET['titulo'])){
+        $titulo = $_GET['titulo'];
+        getByTitle($titulo);
+		return;
+    }
+	
+	if(isset($_GET['offset']) && isset($_GET['limit']))
+	{
+		$offset = $_GET['offset'];
+		$limit = $_GET['limit'];
+		getPaginacao($offset, $limit);
+		return;
+	}
+	
+	if(isset($_GET['genero']) && isset($_GET['ano']))
+	{
+		$genero = $_GET['genero'];
+		$ano = $_GET['ano'];
+		getByGeneroEAno($genero, $ano);
+		return;
+	}
+
+	$stmt = getConn()->query("SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
 	p.id_produtora as idProdutora, p.nome as produtora, 
 	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 	dr.sobrenome as sobrenome_diretor from diretores as dr 
 	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
 	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora;");
 
-	$f = array();
-	while($filme = $stmt->fetch(PDO::FETCH_ASSOC))
+	$f = array();	
+	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
 	{
-		$f[] = array(
-			"id" => $filme["id"],
-			"titulo" => $filme["titulo"],
-			"ano" => $filme["ano"], 
-			"genero" => $filme["genero"],
-			"pais" => $filme["pais"],
-			"diretor" => array(
-				"id" => $filme['idDiretor'],
-				"nome" => $filme['nome_diretor'],
-				"sobrenome" => $filme['sobrenome_diretor']
-			),
-			"produtora" => array(
-				"id" => (int) $filme['idProdutora'],
-				"nome" => utf8_encode($filme['produtora'])
-			)
-		);
-	}	
+		$f[] = jsonFormat($filme);
+	}
+	
 	echo json_encode($f);	
 }
 
@@ -102,24 +104,8 @@ function getFilme($id)
 	$stmt->bindParam("id",$id);
 	$stmt->execute();
 	$filme = $stmt->fetch(PDO::FETCH_OBJ);
-	
-	
-	$f = array(
-			"id" => $filme->id,
-			"titulo" => $filme->titulo,
-			"ano" => $filme->ano, 
-			"genero" => $filme->genero,
-			"pais" => $filme->pais,
-			"diretor" => array(
-				"id" => $filme->idDiretor,
-				"nome" => $filme->nome_diretor,
-				"sobrenome" => $filme->sobrenome_diretor
-			),
-			"produtora" => array(
-				"id" => $filme->idProdutora,
-				"nome" => $filme->produtora
-			)
-		);
+		
+	$f = jsonFormat($filme);
 
 	echo json_encode($f);
 }
@@ -155,12 +141,12 @@ function updateFilme($id)
 	$sql = "UPDATE filmes SET titulo=:titulo, ano=:ano, genero=:genero, pais=:pais, produtora_id=:produtoraId, diretor_id=:diretorId WHERE id_filme=:id";
 	$conn = getConn();
 	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("titulo",$diretor->titulo);
-	$stmt->bindParam("ano",$diretor->ano);
-	$stmt->bindParam("genero",$diretor->genero);
-	$stmt->bindParam("pais",$diretor->pais);
-	$stmt->bindParam("produtoraId",$diretor->produtoraId);
-	$stmt->bindParam("diretorId",$diretor->diretorId);
+	$stmt->bindParam("titulo",$filme->titulo);
+	$stmt->bindParam("ano",$filme->ano);
+	$stmt->bindParam("genero",$filme->genero);
+	$stmt->bindParam("pais",$filme->pais);
+	$stmt->bindParam("produtoraId",$filme->produtoraId);
+	$stmt->bindParam("diretorId",$filme->diretorId);
 	$stmt->bindParam("id",$id);
 	$stmt->execute();
 
@@ -298,22 +284,7 @@ function getFilmesByDirectors($id)
 	$f = array();
 	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
 	{
-		$f[] = array(
-			"id" => $filme->idFilme,
-			"titulo" => $filme->titulo,
-			"ano" => $filme->ano, 
-			"genero" => $filme->genero,
-			"pais" => $filme->pais,
-			"diretor" => array(
-				"id" => $filme->idDiretor,
-				"nome" => $filme->nome_diretor,
-				"sobrenome" => $filme->sobrenome_diretor
-			),
-			"produtora" => array(
-				"id" => $filme->idProdutora,
-				"nome" => $filme->produtora
-			)
-		);
+		$f[] = jsonFormat($filme);
 	}	
 	echo json_encode($f);		
 }
@@ -335,22 +306,7 @@ function getByTitle($titulo)
 	$f = array();
 	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
 	{
-		$f[] = array(
-			"id" => $filme->idFilme,
-			"titulo" => $filme->titulo,
-			"ano" => $filme->ano, 
-			"genero" => $filme->genero,
-			"pais" => $filme->pais,
-			"diretor" => array(
-				"id" => $filme->idDiretor,
-				"nome" => $filme->nome_diretor,
-				"sobrenome" => $filme->sobrenome_diretor
-			),
-			"produtora" => array(
-				"id" => $filme->idProdutora,
-				"nome" => $filme->produtora
-			)
-		);
+		$f[] = jsonFormat($filme);
 	}	
 	echo json_encode($f);
 }
@@ -382,7 +338,42 @@ function getPaginacao($offset, $limit)
 	$f = array();
 	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
 	{
-		$f[] = array(
+		$f[] = jsonFormat($filme);
+	}
+
+	$paginacao = array(
+		"totalRegistros" => $total_registros,
+		"totalPaginas" => $page_count,
+		"filmes" => $f
+	);
+	echo json_encode($paginacao);
+}
+
+function getByGeneroEAno($genero, $ano)
+{
+	$request = \Slim\Slim::getInstance()->request();
+	$sql = "SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
+	p.id_produtora as idProdutora, p.nome as produtora, 
+	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
+	dr.sobrenome as sobrenome_diretor from diretores as dr 
+	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.genero LIKE '%{$genero}%' AND f.ano = $ano;";
+	
+	$conn = getConn();
+	$stmt = $conn->prepare($sql);
+    $stmt->execute();
+	
+	$f = array();
+	while($filme = $stmt->fetch(PDO::FETCH_OBJ))
+	{
+		$f[] = jsonFormat($filme);
+	}	
+	echo json_encode($f);
+}
+
+function jsonFormat($filme)
+{
+	return array(
 			"id" => $filme->idFilme,
 			"titulo" => $filme->titulo,
 			"ano" => $filme->ano, 
@@ -398,14 +389,6 @@ function getPaginacao($offset, $limit)
 				"nome" => $filme->produtora
 			)
 		);
-	}
-
-	$paginacao = array(
-		"totalRegistros" => $total_registros,
-		"totalPaginas" => $page_count,
-		"filmes" => $f
-	);
-	echo json_encode($paginacao);
 }
 
 ?>
