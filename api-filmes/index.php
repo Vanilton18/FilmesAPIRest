@@ -91,7 +91,7 @@ function getFilmes()
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora;");
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora ORDER BY f.id_filme;");
 	
 		$f = array();	
 		while($filme = $stmt->fetch(PDO::FETCH_OBJ))
@@ -230,7 +230,7 @@ function getDiretores()
 {
 	$app = \Slim\Slim::getInstance();
 	try{
-		$stmt = getConn()->query("SELECT * FROM diretores");
+		$stmt = getConn()->query("SELECT id_diretor as id, nome, sobrenome FROM diretores ORDER BY id_diretor");
 		$diretores = $stmt->fetchAll(PDO::FETCH_OBJ);
 		echo json_encode($diretores);
 	}
@@ -264,14 +264,15 @@ function addDiretor()
 
 function getDiretor($id)
 {
-	if(!is_int($id))
+	$app = \Slim\Slim::getInstance();
+	if(!(is_numeric($id)))
 	{		
 		response($app, 400, 'Parâmetro inválido.');
 		return;
 	}
 	try{
 		$conn = getConn();
-		$sql = "SELECT * FROM diretores WHERE id_diretor=:id";
+		$sql = "SELECT id_diretor as id, nome, sobrenome FROM diretores WHERE id_diretor=:id";
 		$stmt = $conn->prepare($sql);
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
@@ -315,7 +316,7 @@ function deleteDiretor($id)
 */
 function getProdutoras()
 {
-	$stmt = getConn()->query("SELECT * FROM produtoras");
+	$stmt = getConn()->query("SELECT id_produtora as id, nome FROM produtoras ORDER BY id_produtora");
 	$produtoras = $stmt->fetchAll(PDO::FETCH_OBJ);
 	echo json_encode($produtoras);
 }
@@ -365,7 +366,7 @@ function getFilmesByDirectors($id)
 	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 	dr.sobrenome as sobrenome_diretor from diretores as dr 
 	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE dr.id_diretor=:id;";
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE dr.id_diretor=:id ORDER BY f.id_filme;";
 	$stmt = $conn->prepare($sql);
 	$stmt->bindParam("id",$id);
 	$stmt->execute();
@@ -386,7 +387,7 @@ function getByTitle($titulo)
 	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 	dr.sobrenome as sobrenome_diretor from diretores as dr 
 	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.titulo LIKE '%{$titulo}%';";
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.titulo LIKE '%{$titulo}%' ORDER BY f.id_filme;";
 	
 	$conn = getConn();
 	$stmt = $conn->prepare($sql);
@@ -420,7 +421,7 @@ function getPaginacao($offset, $limit)
 	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 	dr.sobrenome as sobrenome_diretor from diretores as dr 
 	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora LIMIT {$inicio},{$offset};";
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora LIMIT {$inicio},{$offset} ORDER BY f.id_filme;";
 
 	$stmt = $conn->prepare($sql);
 	$stmt->execute();
@@ -446,7 +447,7 @@ function getByGeneroEAno($genero, $ano)
 	dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 	dr.sobrenome as sobrenome_diretor from diretores as dr 
 	INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.genero LIKE '%{$genero}%' AND f.ano = $ano;";
+	INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.genero LIKE '%{$genero}%' AND f.ano = $ano ORDER BY f.id_filme;";
 	
 	$conn = getConn();
 	$stmt = $conn->prepare($sql);
