@@ -22,4 +22,6 @@ http://localhost/api-filmes/diretores
 
 http://localhost/api-filmes/produtoras
 
-Mais informações Enviar email.
+#Documentação
+
+Acessar a pasta documentacao e executar o arquivo Coleção Filmes, Diretores e Produtoras · Apiary.htm
