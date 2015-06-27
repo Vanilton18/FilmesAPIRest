@@ -110,7 +110,7 @@ function getFilmes()
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora ORDER BY idFilme;");
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora ORDER BY f.id_filme;");
 	
 		$f = array();	
 		while($filme = $stmt->fetch(PDO::FETCH_OBJ))
@@ -249,7 +249,7 @@ function getDiretores()
 {
 	$app = \Slim\Slim::getInstance();
 	try{
-		$stmt = getConn()->query("SELECT * FROM diretores");
+		$stmt = getConn()->query("SELECT id_diretor as id, nome, sobrenome FROM diretores ORDER BY id_diretor");
 		$diretores = $stmt->fetchAll(PDO::FETCH_OBJ);
 		echo json_encode($diretores);
 	}
@@ -286,14 +286,14 @@ function getDiretor($id)
 	
 	$app = \Slim\Slim::getInstance();
 	
-	if(!is_numeric($id))
+	if(!(is_numeric($id)))
 	{		
 		response($app, 400, 'Parâmetro inválido.');
 		return;
 	}
 	try{
 		$conn = getConn();
-		$sql = "SELECT * FROM diretores WHERE id_diretor=:id";
+		$sql = "SELECT id_diretor as id, nome, sobrenome FROM diretores WHERE id_diretor=:id";
 		$stmt = $conn->prepare($sql);
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
@@ -368,7 +368,7 @@ function getProdutoras()
 {
 	$app = \Slim\Slim::getInstance();
 	try{
-		$stmt = getConn()->query("SELECT * FROM produtoras");
+		$stmt = getConn()->query("SELECT id_produtora as id, nome FROM produtoras ORDER BY id_produtora");
 		$produtoras = $stmt->fetchAll(PDO::FETCH_OBJ);
 		echo json_encode($produtoras);
 	}
@@ -425,12 +425,12 @@ function deleteProdutora($id)
 	$app = \Slim\Slim::getInstance();
 	
 	try{	
-	$sql = "DELETE FROM produtoras WHERE id_produtora=:id";
-	$conn = getConn();
-	$stmt = $conn->prepare($sql);
-	$stmt->bindParam("id",$id);
-	$stmt->execute();
-	echo json_encode(array('message' => 'Produtora excluída com sucesso.'));
+		$sql = "DELETE FROM produtoras WHERE id_produtora=:id";
+		$conn = getConn();
+		$stmt = $conn->prepare($sql);
+		$stmt->bindParam("id",$id);
+		$stmt->execute();
+		echo json_encode(array('message' => 'Produtora excluída com sucesso.'));
 	}
 	catch(PDOException $e)
 	{
@@ -449,7 +449,7 @@ function getFilmesByDirectors($id)
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE dr.id_diretor=:id;";
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE dr.id_diretor=:id ORDER BY f.id_filme;";
 		$stmt = $conn->prepare($sql);
 		$stmt->bindParam("id",$id);
 		$stmt->execute();
@@ -479,7 +479,7 @@ function getByTitle($titulo)
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.titulo LIKE '%{$titulo}%';";
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.titulo LIKE '%{$titulo}%' ORDER BY f.id_filme;";
 		
 		$conn = getConn();
 		$stmt = $conn->prepare($sql);
@@ -514,14 +514,13 @@ function getPaginacao($offset, $limit)
 		$count_row = $stmt->fetch(PDO::FETCH_OBJ);
 		$total_registros = $count_row->count;
 		$page_count = (int)ceil($total_registros / $offset);
-		
-		
+			
 		$sql = "SELECT f.id_filme as idFilme, f.titulo, f.ano, f.genero, f.pais, 
 		p.id_produtora as idProdutora, p.nome as produtora, 
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora LIMIT {$inicio},{$offset};";
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora LIMIT {$inicio},{$offset} ORDER BY f.id_filme;";
 
 		$stmt = $conn->prepare($sql);
 		$stmt->execute();
@@ -556,7 +555,7 @@ function getByGeneroEAno($genero, $ano)
 		dr.id_diretor as idDiretor,dr.nome as nome_diretor, 
 		dr.sobrenome as sobrenome_diretor from diretores as dr 
 		INNER JOIN filmes f ON f.id_diretor = dr.id_diretor
-		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.genero LIKE '%{$genero}%' AND f.ano = $ano;";
+		INNER JOIN produtoras p ON p.id_produtora = f.id_produtora WHERE f.genero LIKE '%{$genero}%' AND f.ano = $ano ORDER BY f.id_filme;";
 		
 		$conn = getConn();
 		$stmt = $conn->prepare($sql);
